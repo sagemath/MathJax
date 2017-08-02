@@ -1,3 +1,6 @@
+/* -*- Mode: Javascript; indent-tabs-mode:nil; js-indent-level: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+
 /*************************************************************
  *
  *  MathJax/extensions/TeX/newcommand.js
@@ -7,7 +10,7 @@
  *
  *  ---------------------------------------------------------------------
  *  
- *  Copyright (c) 2009-2012 Design Science, Inc.
+ *  Copyright (c) 2009-2017 The MathJax Consortium
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,7 +26,7 @@
  */
 
 MathJax.Extension["TeX/newcommand"] = {
-  version: "2.0"
+  version: "2.7.2-beta.1"
 };
 
 MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
@@ -45,7 +48,7 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
   TEX.Parse.Augment({
 
     /*
-     *  Implement \newcommand{\name}[n]{...}
+     *  Implement \newcommand{\name}[n][default]{...}
      */
     NewCommand: function (name) {
       var cs = this.trimSpaces(this.GetArgument(name)),
@@ -53,10 +56,16 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
           opt = this.GetBrackets(name),
           def = this.GetArgument(name);
       if (cs.charAt(0) === "\\") {cs = cs.substr(1)}
-      if (!cs.match(/^(.|[a-z]+)$/i)) {TEX.Error("Illegal control sequence name for "+name)}
+      if (!cs.match(/^(.|[a-z]+)$/i)) {
+        TEX.Error(["IllegalControlSequenceName",
+                   "Illegal control sequence name for %1",name]);
+      }
       if (n) {
         n = this.trimSpaces(n);
-        if (!n.match(/^[0-9]+$/)) {TEX.Error("Illegal number of parameters specified in "+name)}
+        if (!n.match(/^[0-9]+$/)) {
+          TEX.Error(["IllegalParamNumber",
+                     "Illegal number of parameters specified in %1",name]);
+        }
       }
       this.setDef(cs,['Macro',def,n,opt]);
     },
@@ -67,13 +76,17 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
     NewEnvironment: function (name) {
       var env  = this.trimSpaces(this.GetArgument(name)),
           n    = this.GetBrackets(name),
+          opt  = this.GetBrackets(name),
           bdef = this.GetArgument(name),
           edef = this.GetArgument(name);
       if (n) {
         n = this.trimSpaces(n);
-        if (!n.match(/^[0-9]+$/)) {TEX.Error("Illegal number of parameters specified in "+name)}
+        if (!n.match(/^[0-9]+$/)) {
+          TEX.Error(["IllegalParamNumber",
+                     "Illegal number of parameters specified in %1",name]);
+        }
       }
-      this.setEnv(env,['BeginEnv','EndEnv',bdef,edef,n]);
+      this.setEnv(env,['BeginEnv',[null,'EndEnv'],bdef,edef,n,opt]);
     },
     
     /*
@@ -107,10 +120,11 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
         name = this.GetCSname(name);
         macro = this.csFindMacro(name);
         if (!macro) {
-          if (TEXDEF.mathchar0mi[name])            {macro = ["csMathchar0mi",TEXDEF.mathchar0mi[name]]} else
-          if (TEXDEF.mathchar0mo[name])            {macro = ["csMathchar0mo",TEXDEF.mathchar0mo[name]]} else
-          if (TEXDEF.mathchar7[name])              {macro = ["csMathchar7",TEXDEF.mathchar7[name]]}     else 
-          if (TEXDEF.delimiter["\\"+name] != null) {macro = ["csDelimiter",TEXDEF.delimiter["\\"+name]]}
+          if (TEXDEF.mathchar0mi[name])            {macro = ["csMathchar0mi",TEXDEF.mathchar0mi[name]]}  else
+          if (TEXDEF.mathchar0mo[name])            {macro = ["csMathchar0mo",TEXDEF.mathchar0mo[name]]}  else
+          if (TEXDEF.mathchar7[name])              {macro = ["csMathchar7",TEXDEF.mathchar7[name]]}      else 
+          if (TEXDEF.delimiter["\\"+name] != null) {macro = ["csDelimiter",TEXDEF.delimiter["\\"+name]]} else
+          return;
         }
       } else {macro = ["Macro",c]; this.i++}
       this.setDef(cs,macro);
@@ -128,7 +142,10 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
      */
     GetCSname: function (cmd) {
       var c = this.GetNext();
-      if (c !== "\\") {TEX.Error("\\ must be followed by a control sequence")}
+      if (c !== "\\") {
+        TEX.Error(["MissingCS",
+                   "%1 must be followed by a control sequence", cmd])
+      }
       var cs = this.trimSpaces(this.GetArgument(cmd));
       return cs.substr(1);
     },
@@ -144,8 +161,14 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
         if (c === '#') {
           if (i !== this.i) {params[n] = this.string.substr(i,this.i-i)}
           c = this.string.charAt(++this.i);
-          if (!c.match(/^[1-9]$/)) {TEX.Error("Illegal use of # in template for "+cs)}
-          if (parseInt(c) != ++n) {TEX.Error("Parameters for "+cs+" must be numbered sequentially")}
+          if (!c.match(/^[1-9]$/)) {
+            TEX.Error(["CantUseHash2",
+                       "Illegal use of # in template for %1",cs]);
+          }
+          if (parseInt(c) != ++n) {
+            TEX.Error(["SequentialParam",
+                       "Parameters for %1 must be numbered sequentially",cs]);
+          }
           i = this.i+1;
         } else if (c === '{') {
           if (i !== this.i) {params[n] = this.string.substr(i,this.i-i)}
@@ -153,7 +176,8 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
         }
         this.i++;
       }
-      TEX.Error("Missing replacement string for definition of "+cmd);
+      TEX.Error(["MissingReplacementString",
+                 "Missing replacement string for definition of %1",cmd]);
     },
     
     /*
@@ -162,34 +186,43 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
     MacroWithTemplate: function (name,text,n,params) {
       if (n) {
         var args = []; this.GetNext();
-        if (params[0] && !this.MatchParam(params[0]))
-          {TEX.Error("Use of "+name+" doesn't match its definition")}
+        if (params[0] && !this.MatchParam(params[0])) {
+          TEX.Error(["MismatchUseDef",
+                     "Use of %1 doesn't match its definition",name]);
+        }
         for (var i = 0; i < n; i++) {args.push(this.GetParameter(name,params[i+1]))}
         text = this.SubstituteArgs(args,text);
       }
       this.string = this.AddArgs(text,this.string.slice(this.i));
       this.i = 0;
-      if (++this.macroCount > TEX.config.MAXMACROS)
-        {TEX.Error("MathJax maximum macro substitution count exceeded; is there a recursive macro call?")}
+      if (++this.macroCount > TEX.config.MAXMACROS) {
+        TEX.Error(["MaxMacroSub1",
+                   "MathJax maximum macro substitution count exceeded; " +
+                   "is there a recursive macro call?"]);
+      }
     },
     
     /*
      *  Process a user-defined environment
      */
-    BeginEnv: function (begin,bdef,edef,n) {
+    BeginEnv: function (begin,bdef,edef,n,def) {
       if (n) {
         var args = [];
-        for (var i = 0; i < n; i++) {args.push(this.GetArgument("\\begin{"+name+"}"))}
+        if (def != null) {
+          var optional = this.GetBrackets("\\begin{"+name+"}");
+          args.push(optional == null ? def : optional);
+        }
+        for (var i = args.length; i < n; i++) {args.push(this.GetArgument("\\begin{"+name+"}"))}
         bdef = this.SubstituteArgs(args,bdef);
-        edef = this.SubstituteArgs(args,edef);
+        edef = this.SubstituteArgs([],edef); // no args, but get errors for #n in edef
       }
-      begin.edef = edef;
       this.string = this.AddArgs(bdef,this.string.slice(this.i)); this.i = 0;
       return begin;
     },
-    EndEnv: function (begin,row) {
-      this.string = this.AddArgs(begin.edef,this.string.slice(this.i)); this.i = 0
-      return row;
+    EndEnv: function (begin,bdef,edef,n) {
+      var end = "\\end{\\end\\"+begin.name+"}"; // special version of \end for after edef
+      this.string = this.AddArgs(edef,end+this.string.slice(this.i)); this.i = 0;
+      return null;
     },
     
     /*
@@ -199,17 +232,22 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
       if (param == null) {return this.GetArgument(name)}
       var i = this.i, j = 0, hasBraces = 0;
       while (this.i < this.string.length) {
-        if (this.string.charAt(this.i) === '{') {
+        var c = this.string.charAt(this.i);
+        if (c === '{') {
           if (this.i === i) {hasBraces = 1}
           this.GetArgument(name); j = this.i - i;
         } else if (this.MatchParam(param)) {
           if (hasBraces) {i++; j -= 2}
           return this.string.substr(i,j);
+	} else if (c === "\\") {
+	  this.i++; j++; hasBraces = 0;
+	  var match = this.string.substr(this.i).match(/[a-z]+|./i);
+	  if (match) {this.i += match[0].length; j = this.i - i}
         } else {
           this.i++; j++; hasBraces = 0;
         }
       }
-      TEX.Error("Runaway argument for "+name+"?");
+      TEX.Error(["RunawayArgument","Runaway argument for %1?",name]);
     },
     
     /*
@@ -219,6 +257,8 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
      */
     MatchParam: function (param) {
       if (this.string.substr(this.i,param.length) !== param) {return 0}
+      if (param.match(/\\[a-z]+$/i) &&
+          this.string.charAt(this.i+param.length).match(/[a-z]/i)) {return 0}
       this.i += param.length;
       return 1;
     }
@@ -226,7 +266,7 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
   });
   
   TEX.Environment = function (name) {
-    TEXDEF.environment[name] = ['BeginEnv','EndEnv'].concat([].slice.call(arguments,1));
+    TEXDEF.environment[name] = ['BeginEnv',[null,'EndEnv']].concat([].slice.call(arguments,1));
     TEXDEF.environment[name].isUser = true;
   }
 

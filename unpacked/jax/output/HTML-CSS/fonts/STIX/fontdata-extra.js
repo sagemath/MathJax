@@ -1,3 +1,6 @@
+/* -*- Mode: Javascript; indent-tabs-mode:nil; js-indent-level: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+
 /*************************************************************
  *
  *  MathJax/jax/output/HTML-CSS/fonts/STIX/fontdata-extra.js
@@ -6,7 +9,7 @@
  *
  *  ---------------------------------------------------------------------
  *  
- *  Copyright (c) 2011-2012 Design Science, Inc.
+ *  Copyright (c) 2011-2017 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,6 +25,7 @@
  */
 
 (function (HTMLCSS) {
+  var VERSION = "2.7.2-beta.1";
   
   var DELIMITERS = HTMLCSS.FONTDATA.DELIMITERS;
 
@@ -33,7 +37,8 @@
       SIZE2   = "STIXSizeTwoSym",
       SIZE3   = "STIXSizeThreeSym",
       SIZE4   = "STIXSizeFourSym",
-      SIZE5   = "STIXSizeFiveSym";
+      SIZE5   = "STIXSizeFiveSym",
+      INTD    = "STIXIntegralsD";
   var H = "H", V = "V";
   
   var delim = {
@@ -116,6 +121,11 @@
     0x21DB: // right triple arrow
     {
       dir: H, HW: [[.926,GENERAL]], stretch: {right:[0x21DB,GENERAL], rep:[0x2261,GENERAL]}
+    },
+    0x222B: // integral
+    {
+      dir: V, HW: [[0.607,GENERAL], [0.979,INTD]],
+      stretch: {top:[0x2320,SIZE1], ext:[0x23AE,SIZE1], bot:[0x2321,SIZE1]}
     },
     0x23B4: // top square bracket
     {

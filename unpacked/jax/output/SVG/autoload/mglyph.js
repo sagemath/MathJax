@@ -1,3 +1,6 @@
+/* -*- Mode: Javascript; indent-tabs-mode:nil; js-indent-level: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
+
 /*************************************************************
  *
  *  MathJax/jax/output/SVG/autoload/mglyph.js
@@ -6,7 +9,7 @@
  *
  *  ---------------------------------------------------------------------
  *  
- *  Copyright (c) 2011-2012 Design Science, Inc.
+ *  Copyright (c) 2011-2017 The MathJax Consortium
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,10 +25,11 @@
  */
 
 MathJax.Hub.Register.StartupHook("SVG Jax Ready",function () {
-  var VERSION = "2.0";
+  var VERSION = "2.7.2-beta.1";
   var MML = MathJax.ElementJax.mml,
       SVG = MathJax.OutputJax.SVG,
-      BBOX = SVG.BBOX;
+      BBOX = SVG.BBOX,
+      LOCALE = MathJax.Localization;
   
   var XLINKNS = "http://www.w3.org/1999/xlink";
 
@@ -33,15 +37,16 @@ MathJax.Hub.Register.StartupHook("SVG Jax Ready",function () {
     type: "image", removeable: false,
     Init: function (img,w,h,align,mu,def) {
       if (def == null) {def = {}}
-      var W = img.width*1000/SVG.em, H = img.height*1000/SVG.em, y = 0;
-      if (w !== "") {W = SVG.length2em(w,mu,W)}
-      if (h !== "") {H = SVG.length2em(h,mu,H)}
+      var W = img.width*1000/SVG.em, H = img.height*1000/SVG.em;
+      var WW = W, HH = H, y = 0;
+      if (w !== "") {W = SVG.length2em(w,mu,WW); H = (WW ? W/WW * HH : 0)}
+      if (h !== "") {H = SVG.length2em(h,mu,HH); if (w === "") {W = (HH ? H/HH * WW : 0)}}
       if (align !== "" && align.match(/\d/)) {y = SVG.length2em(align,mu); def.y = -y}
       def.height = Math.floor(H); def.width = Math.floor(W);
       def.transform = "translate(0,"+H+") matrix(1 0 0 -1 0 0)";
       def.preserveAspectRatio = "none";
       this.SUPER(arguments).Init.call(this,def);
-      this.element.setAttributeNS(XLINKNS,"href",img.src);
+      this.element.setAttributeNS(XLINKNS,"href",img.SRC);
       this.w = this.r = W; this.h = this.H = H + y;
       this.d = this.D = -y; this.l = 0;
     }
@@ -66,16 +71,18 @@ MathJax.Hub.Register.StartupHook("SVG Jax Ready",function () {
           img = this.img.img;
           img.onload  = MathJax.Callback(["SVGimgLoaded",this]);
           img.onerror = MathJax.Callback(["SVGimgError",this]);
-          img.src = values.src;
+          img.src = img.SRC = values.src;
           MathJax.Hub.RestartAfter(img.onload);
         }
         if (this.img.status !== "OK") {
-          err = MML.merror("Bad mglyph: "+values.src).With({mathsize:"75%"});
+          err = MML.Error(
+            LOCALE._(["MathML","BadMglyph"],"Bad mglyph: %1",values.src),
+            {mathsize:"75%"});
           this.Append(err); svg = err.toSVG(); this.data.pop();
         } else {
           var mu = this.SVGgetMu(svg);
           svg.Add(BBOX.MGLYPH(this.img.img,values.width,values.height,values.valign,mu,
-                              {src:values.src, alt:values.alt, title:values.alt}));
+                              {alt:values.alt, title:values.alt}));
         }
       }
       svg.Clean();
